@@ -10,7 +10,6 @@ env/
 
 # Environment variables
 .env
-.env.*
 
 # IDE
 .vscode/
@@ -44,6 +43,5 @@ docker-compose.override.yml
 
 # Secrets
 keys/private.pem
-keys/public.pem
 
 .idea/

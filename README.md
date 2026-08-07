@@ -174,6 +174,87 @@ docker run -p 8000:8000 signed-webhook-receiver
 
 ---
 
+## Configuration
+
+Before running the service, configure your domain in the `.env` file.
+
+Create a `.env` file:
+
+```env
+WEBHOOK_DOMAIN=hook.example.com
+```
+
+Replace `hook.example.com` with your own domain.
+
+---
+
+## Traefik Network
+
+This project expects an existing Traefik network named proxy.
+
+Create the network before starting the container:
+
+```bash
+docker network create proxy
+```
+
+Your Traefik instance and this service must be connected to the same Docker network.
+
+---
+
+## Webhook Sender Example
+The sender signs the payload using the private `RSA` key.
+
+The receiver only needs the public key to verify the signature.
+
+Example:
+```python
+import json
+import base64
+
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+
+
+data = {
+    "event": "payment.completed",
+    "id": 123
+}
+
+
+message = json.dumps(
+    data,
+    separators=(",", ":"),
+    sort_keys=True
+).encode()
+
+
+signature = private_key.sign(
+    message,
+    padding.PKCS1v15(),
+    hashes.SHA256()
+)
+
+
+sign = base64.b64encode(signature).decode()
+
+
+payload = {
+    "sign": sign,
+    "data": data
+}
+```
+
+Send the generated payload to:
+
+```http request
+POST https://your-domain.com/api/v1/webhook
+```
+
+The receiver will verify the RSA signature before processing the data.
+
+
+
 ## License
 
 MIT
