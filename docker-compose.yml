@@ -1,20 +1,59 @@
 services:
-
   webhook:
     build: .
     container_name: rsa-webhook
 
     labels:
       - traefik.enable=true
-
       - traefik.http.routers.webhook.rule=Host(`${WEBHOOK_DOMAIN}`)
-
+      - traefik.http.routers.webhook.entrypoints=websecure
+      - traefik.http.routers.webhook.tls=true
+      - traefik.http.routers.webhook.tls.certresolver=letsencrypt
       - traefik.http.services.webhook.loadbalancer.server.port=8000
 
     networks:
       - proxy
 
+    restart: unless-stopped
+
+
+  traefik:
+    image: traefik:v3.3
+    container_name: traefik
+
+    command:
+      - "--api.dashboard=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+
+      # Let's Encrypt
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${LE_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+
+    networks:
+      - proxy
+
+    restart: unless-stopped
+
 
 networks:
   proxy:
+    name: proxy
     external: true
+
+
+volumes:
+  letsencrypt:
