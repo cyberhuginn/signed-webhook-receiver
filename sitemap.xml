@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://cyberhuginn.github.io/signed-webhook-receiver/</loc>
+         <lastmod>2026-08-07</lastmod>
+    </url>
+    <url>
+         <loc>https://cyberhuginn.github.io/signed-webhook-receiver/examples/go/</loc>
+         <lastmod>2026-08-07</lastmod>
+    </url>
+    <url>
+         <loc>https://cyberhuginn.github.io/signed-webhook-receiver/examples/javascript/</loc>
+         <lastmod>2026-08-07</lastmod>
+    </url>
+    <url>
+         <loc>https://cyberhuginn.github.io/signed-webhook-receiver/examples/python/</loc>
+         <lastmod>2026-08-07</lastmod>
+    </url>
+</urlset>
