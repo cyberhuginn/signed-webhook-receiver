@@ -1,0 +1,11 @@
+site_name: Signed Webhook Receiver
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.top
+    - content.code.copy
+
+nav:
+  - Home: index.md
