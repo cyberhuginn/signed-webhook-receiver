@@ -5,6 +5,29 @@
 <p align="center">
   <img src="./imgs/banner.png" alt="Signed Webhook Receiver Banner">
 </p>
+<p align="center">
+
+  <img src="https://img.shields.io/github/license/cyberhuginn/signed-webhook-receiver?style=flat-square" />
+
+  <img src="https://img.shields.io/github/stars/cyberhuginn/signed-webhook-receiver?style=flat-square" />
+
+  <img src="https://img.shields.io/github/forks/cyberhuginn/signed-webhook-receiver?style=flat-square" />
+
+  <img src="https://img.shields.io/github/issues/cyberhuginn/signed-webhook-receiver?style=flat-square" />
+
+</p>
+
+<p align="center">
+
+  <img src="https://img.shields.io/badge/python-3.12-blue?style=flat-square&logo=python" />
+
+  <img src="https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat-square&logo=fastapi" />
+
+  <img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker" />
+
+  <img src="https://img.shields.io/badge/security-RSA%20signature-red?style=flat-square&logo=letsencrypt" />
+
+</p>
 
 A lightweight secure webhook gateway using RSA signature verification.
 
