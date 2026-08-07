@@ -126,6 +126,14 @@ HTTP/1.1 404 Not Found
 
 ---
 
+## Documentation
+
+Read the full documentation:
+
+[Documentation](https://domain.com)
+
+---
+
 ## RSA Keys
 
 Generate private key:

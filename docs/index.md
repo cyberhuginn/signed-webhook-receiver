@@ -89,13 +89,6 @@ For production environments:
 - Validate webhook payloads before processing
 - Use canonical JSON before signing
 
-## Documentation
-
-Explore the documentation:
-
-- [Webhook Protocol](protocol.md)
-- [Webhook Sender](sender.md)
-
 ### Sender Examples
 
 - [Python](examples/python.md)

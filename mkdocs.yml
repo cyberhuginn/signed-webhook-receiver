@@ -3,9 +3,16 @@ site_name: Signed Webhook Receiver
 theme:
   name: material
   features:
-    - navigation.tabs
-    - navigation.top
     - content.code.copy
 
 nav:
   - Home: index.md
+
+  - Examples:
+      - Python Example: examples/python.md
+      - Javascript Example: examples/javascript.md
+      - Go Example: examples/go.md
+
+repo_name: cyberhuginn/signed-webhook-receiver
+repo_url: https://github.com/cyberhuginn/signed-webhook-receiver
+site_url: https://cyberhuginn.github.io/signed-webhook-receiver/
