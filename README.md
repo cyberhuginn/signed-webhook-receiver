@@ -130,7 +130,7 @@ HTTP/1.1 404 Not Found
 
 Read the full documentation:
 
-[Documentation](https://domain.com)
+[See Documentation](https://cyberhuginn.github.io/signed-webhook-receiver/)
 
 ---
 
