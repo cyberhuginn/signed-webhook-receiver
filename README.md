@@ -39,6 +39,8 @@ It validates incoming webhook payloads using RSA digital signatures before accep
 
 The receiver never trusts incoming messages unless the signature can be verified with the configured public key.
 
+Documents: [https://cyberhuginn.github.io/signed-webhook-receiver/](https://cyberhuginn.github.io/signed-webhook-receiver/)
+
 ---
 
 ## When Should You Use This?
