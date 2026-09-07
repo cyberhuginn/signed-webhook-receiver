@@ -24,184 +24,6 @@ A lightweight and secure webhook gateway for verifying RSA-signed requests.
 
 ---
 
-## فارسی
-
-> **اعتبارسنجی کن. اعتماد کن. پردازش کن.**
-
-### معرفی
-
-**Signed Webhook Receiver** یک سرویس سبک، مینیمال و امن برای دریافت و اعتبارسنجی درخواست‌های Webhook است که با **FastAPI** ساخته شده است.
-
-این سرویس قبل از اینکه یک درخواست ورودی را بپذیرد یا داده‌های آن را در اختیار برنامه قرار دهد، امضای دیجیتال آن را با استفاده از **کلید عمومی RSA** بررسی می‌کند.
-
-به زبان ساده، سرویس هیچ درخواستی را معتبر فرض نمی‌کند؛ مگر اینکه بتواند ثابت کند درخواست با **کلید خصوصیِ یک فرستنده مورد اعتماد** امضا شده است.
-
-مستندات کامل پروژه:
-
-[مشاهده مستندات](https://cyberhuginn.github.io/signed-webhook-receiver/)
-
----
-
-## داستان شکل‌گیری پروژه
-
-این پروژه از یک ایده‌ی تئوری یا صرفاً یک تمرین امنیتی شروع نشد؛ از یک مشکل واقعی در یک پروژه شروع شد.
-
-در یکی از پروژه‌هایی که روی آن کار می‌کردم، سرور اصلی داخل ایران قرار داشت و امکان ارتباط مستقیم و قابل اتکا با **Telegram API** وجود نداشت.
-
-در طرف دیگر، یک سرور خارجی داشتیم که می‌توانست به سرویس‌های خارجی دسترسی داشته باشد.
-
-راه‌حل اولیه ساده بود:
-
-```text
-Server in Iran
-      |
-      | Request
-      v
-External Server
-      |
-      v
-Telegram API
-```
-
-اما قرار نبود یک Proxy ساده ساخته شود.
-
-موضوع مهم‌تر، **امنیت ارتباط بین دو سرور** بود.
-
-درخواست‌هایی که از سرور اصلی ارسال می‌شدند ممکن بود حاوی اطلاعات مهمی باشند. بنابراین لازم بود سرور مقصد بتواند تشخیص دهد که:
-
-* درخواست واقعاً از یک سرور مورد اعتماد آمده است.
-* محتوای درخواست در مسیر تغییر نکرده است.
-* یک شخص یا سرویس ناشناس نتواند به‌سادگی درخواست جعلی ارسال کند.
-
-از همین نیاز، ایده‌ی **Signed Webhook Receiver** شکل گرفت.
-
----
-
-## ایده اصلی
-
-ساختار کلی سیستم به این شکل است:
-
-```text
-Source Server
-     |
-     | Signed Request
-     |
-     v
-+----------------------+
-| Signed Webhook       |
-| Receiver             |
-+----------------------+
-     |
-     | Verify Signature
-     |
-     +---- Invalid ----> Reject
-     |
-     |
-     +---- Valid ------> Process
-```
-
-سرور مبدا داده را با **کلید خصوصی RSA** امضا می‌کند.
-
-سرور مقصد کلید خصوصی را در اختیار ندارد و فقط **کلید عمومی** را نگه می‌دارد.
-
-وقتی درخواست دریافت می‌شود، امضای آن با کلید عمومی بررسی می‌شود.
-
-اگر امضا معتبر باشد، درخواست قابل اعتماد در نظر گرفته شده و پردازش می‌شود.
-
-اگر امضا معتبر نباشد، درخواست رد می‌شود.
-
----
-
-## چرا این پروژه ساخته شد؟
-
-فرض کنید دو سرور دارید:
-
-```text
-┌──────────────────┐
-│   Server A       │
-│                  │
-│   Private Key    │
-└────────┬─────────┘
-         │
-         │ Signed Request
-         ▼
-┌──────────────────┐
-│   Server B       │
-│                  │
-│   Public Key     │
-└──────────────────┘
-```
-
-Server A درخواست را با کلید خصوصی امضا می‌کند.
-
-Server B با کلید عمومی بررسی می‌کند که:
-
-1. درخواست توسط فرستنده مورد اعتماد امضا شده است.
-2. محتوای درخواست بعد از امضا تغییر نکرده است.
-3. درخواست توسط یک فرستنده ناشناس جعل نشده است.
-
-این مدل برای ارتباطات **Server-to-Server**، Webhookها، APIهای داخلی، Event Notificationها و سرویس‌های توزیع‌شده کاربرد زیادی دارد.
-
----
-
-## یک سناریوی واقعی
-
-یکی از کاربردهای اصلی این پروژه، انتقال درخواست از یک سرور با دسترسی محدود به یک سرور خارجی است.
-
-برای مثال:
-
-```text
-┌─────────────────────┐
-│ Server داخل ایران   │
-│                     │
-│ Application         │
-└──────────┬──────────┘
-           │
-           │ Sign Request
-           ▼
-      Internet
-           │
-           ▼
-┌─────────────────────┐
-│ External Server     │
-│                     │
-│ Signed Receiver     │
-└──────────┬──────────┘
-           │
-           ▼
-      Telegram API
-```
-
-در این معماری، سرور اصلی مستقیماً با سرویس خارجی ارتباط برقرار نمی‌کند.
-
-در عوض، درخواست موردنظر را برای سرور واسط ارسال می‌کند و سرور واسط پس از اعتبارسنجی درخواست، عملیات موردنظر را انجام می‌دهد.
-
-این عملیات می‌تواند شامل موارد مختلفی باشد:
-
-* ارسال درخواست به Telegram API
-* Forward کردن درخواست به یک سرویس خارجی
-* پردازش داده
-* ذخیره اطلاعات
-* اجرای یک Job
-* اجرای یک Workflow
-* فراخوانی یک API دیگر
-
----
-
-## نکته مهم درباره امنیت
-
-هدف این پروژه این نیست که جایگزین VPN، Network Tunnel یا Proxyهای تخصصی شود.
-
-این سرویس یک مسئله مشخص را حل می‌کند:
-
-> **اعتبارسنجی و انتقال امن درخواست‌های Application-Level بین دو سرور.**
-
-در واقع تمرکز پروژه روی **Authentication، Integrity و Trust در سطح Application** است.
-
----
-
-# English
-
 ## Overview
 
 Signed Webhook Receiver is a lightweight and secure webhook service built with **FastAPI**.
@@ -210,9 +32,7 @@ It validates incoming webhook payloads using RSA digital signatures before accep
 
 The receiver never trusts an incoming request unless its signature can be verified using the configured public key.
 
-Documentation:
-
-[See Documentation](https://cyberhuginn.github.io/signed-webhook-receiver/)
+Documentation: [Signed Webhook Receiver Docs](https://cyberhuginn.github.io/signed-webhook-receiver/)
 
 ---
 
@@ -220,10 +40,10 @@ Documentation:
 
 This project is useful when one server needs to securely send requests to another server and you want to make sure that:
 
-* The message cannot be modified in transit.
-* Only authorized servers can generate valid requests.
-* Attackers cannot easily forge requests.
-* The receiver can verify the authenticity and integrity of incoming data.
+- The message cannot be modified or tampered with in transit.
+- Only authorized servers can generate valid requests.
+- Attackers cannot easily forge requests.
+- The receiver can verify the authenticity and integrity of incoming data.
 
 The sender signs the message using its **private RSA key**.
 
@@ -231,41 +51,37 @@ The receiving server verifies the signature using the corresponding **public key
 
 This provides both **message integrity** and **sender authentication** without requiring the receiver to expose traditional credentials such as passwords or API keys.
 
----
+### Example Use Case
 
-## Example Architecture
+Imagine you have two separate servers:
 
 ```text
-Server A                         Server B
-────────                         ────────
-
-Private Key                      Public Key
-     │                                │
-     │                                │
-     ▼                                ▼
-Sign Message  ────────────────>  Verify Signature
-                                      │
-                                      ▼
-                                Process Request
+Server A  ──────── Signed Message ────────>  Server B
+   │                                           │
+Private Key                                  Public Key
+   │                                           │
+   └──── Signs the message             Verifies the signature
 ```
 
-Server B can verify that:
+Server B can verify that the message:
 
-1. The request was signed by a trusted sender.
-2. The request was not modified after signing.
-3. The request was not generated by an unauthorized party.
+1. Was actually signed by a trusted server.
+2. Has not been modified after it was signed.
+3. Was not generated by an unauthorized party.
+
+This makes the project particularly useful for **secure server-to-server communication, webhooks, internal APIs, event notifications, and distributed services** where message authenticity and integrity are important.
 
 ---
 
 ## Features
 
-* RSA SHA-256 signature verification
-* Secure webhook endpoint
-* FastAPI + Uvicorn
-* Docker ready
-* Traefik compatible
-* Public-key based verification
-* Lightweight microservice architecture
+- RSA SHA-256 signature verification
+- Secure webhook endpoint
+- FastAPI + Uvicorn
+- Docker ready
+- Traefik compatible
+- Public key based verification
+- Lightweight microservice architecture
 
 ---
 
@@ -290,12 +106,12 @@ Webhook Receiver
 
 ## Tech Stack
 
-* Python 3.12
-* FastAPI
-* Uvicorn
-* Cryptography
-* Docker
-* Traefik
+- Python 3.12
+- FastAPI
+- Uvicorn
+- Cryptography
+- Docker
+- Traefik
 
 ---
 
@@ -507,21 +323,21 @@ The project was later extracted into an independent open-source microservice so 
 
 ## What This Project Is — and Isn't
 
-### It is:
+### It is
 
-* A secure webhook receiver
-* An RSA signature verification service
-* An application-level trust layer
-* A lightweight server-to-server communication gateway
-* A useful building block for distributed systems
+- A secure webhook receiver
+- An RSA signature verification service
+- An application-level trust layer
+- A lightweight server-to-server communication gateway
+- A useful building block for distributed systems
 
-### It is not:
+### It is not
 
-* A VPN
-* A network tunnel
-* A general-purpose proxy
-* A replacement for TLS
-* A complete message queue
+- A VPN
+- A network tunnel
+- A general-purpose proxy
+- A replacement for TLS
+- A complete message queue
 
 ---
 
@@ -531,47 +347,470 @@ MIT
 
 ---
 
-## فارسی — خلاصه پروژه
+<div dir="rtl">
 
-**Signed Webhook Receiver** یک Gateway سبک و امن برای دریافت درخواست‌های Webhook و بررسی صحت آن‌ها با استفاده از امضای دیجیتال RSA است.
+# مستندات فارسی
 
-ایده اصلی ساده است:
-
-**سرور فرستنده با کلید خصوصی درخواست را امضا می‌کند و سرور گیرنده با کلید عمومی صحت آن را بررسی می‌کند.**
-
-به این ترتیب، سرور مقصد می‌تواند قبل از پردازش درخواست مطمئن شود که درخواست از یک فرستنده مورد اعتماد آمده و محتوای آن بعد از امضا تغییر نکرده است.
-
-این پروژه برای سناریوهایی مثل موارد زیر مناسب است:
-
-* ارتباط امن بین دو سرور
-* Webhookهای حساس
-* APIهای داخلی
-* انتقال درخواست بین سرورهای داخل و خارج
-* Event Notification
-* سرویس‌های Microservice
-* اجرای Job و Workflow از راه دور
-* ارسال درخواست به سرویس‌های خارجی
-
-این پروژه از یک نیاز واقعی شکل گرفت؛ جایی که سرور اصلی پروژه به دلیل شرایط شبکه نمی‌توانست ارتباط مستقیمی با سرویس‌هایی مانند Telegram API داشته باشد.
-
-به جای ساختن یک Proxy ساده، یک لایه‌ی Application-Level طراحی شد که درخواست‌ها را امضا می‌کند و در سمت مقصد قبل از هرگونه پردازش، امضای آن‌ها را اعتبارسنجی می‌کند.
-
-به همین دلیل، پروژه صرفاً یک Webhook Receiver ساده نیست؛ بلکه یک **لایه اعتماد بین دو Application** ایجاد می‌کند.
-
-> **Verify. Trust. Process.**
->
 > **اعتبارسنجی کن. اعتماد کن. پردازش کن.**
+
+## معرفی
+
+**Signed Webhook Receiver** یک سرویس سبک، مینیمال و امن برای دریافت و اعتبارسنجی درخواست‌های Webhook است که با **FastAPI** ساخته شده است.
+
+این سرویس قبل از اینکه یک درخواست ورودی را بپذیرد یا داده‌های آن را در اختیار برنامه قرار دهد، امضای دیجیتال آن را با استفاده از **کلید عمومی RSA** بررسی می‌کند.
+
+به زبان ساده، سرویس هیچ درخواست ورودی را معتبر فرض نمی‌کند؛ مگر اینکه بتواند با استفاده از کلید عمومیِ از قبل تنظیم‌شده، صحت امضای آن را تأیید کند.
+
+مستندات کامل پروژه:
+
+[مشاهده مستندات](https://cyberhuginn.github.io/signed-webhook-receiver/)
 
 ---
 
-## مقاله مرتبط
+## این پروژه چه مشکلی را حل می‌کند؟
 
-اگر می‌خواهید داستان شکل‌گیری این پروژه و مسئله‌ای که باعث شد آن را بسازم بخوانید، این مقاله توضیح کامل‌تری درباره‌ی تجربه واقعی پشت پروژه ارائه می‌دهد:
+فرض کنید یک سرور باید برای سرور دیگری اطلاعاتی ارسال کند، اما نمی‌خواهید صرفاً به یک API Key یا رمز عبور اعتماد کنید.
+
+در این حالت، سرور فرستنده اطلاعات را با **کلید خصوصی RSA** امضا می‌کند و سرور گیرنده با **کلید عمومی**، امضا را بررسی می‌کند.
+
+در نتیجه، سرور گیرنده می‌تواند تشخیص دهد که:
+
+- درخواست واقعاً توسط یک فرستنده مورد اعتماد ایجاد شده است.
+- محتوای درخواست در مسیر تغییر نکرده است.
+- درخواست توسط یک شخص یا سرویس ناشناس جعل نشده است.
+
+---
+
+## داستان شکل‌گیری پروژه
+
+این پروژه از یک مسئله واقعی در زیرساخت یک پروژه شروع شد، نه صرفاً به عنوان یک نمونه برای پیاده‌سازی RSA.
+
+در سناریوی اولیه، سرور اصلی داخل ایران قرار داشت و امکان برقراری ارتباط مستقیم و قابل اتکا با سرویس‌هایی مانند **Telegram API** وجود نداشت.
+
+در طرف دیگر، یک سرور خارجی داشتیم که می‌توانست به سرویس‌های موردنظر دسترسی داشته باشد.
+
+راه‌حل می‌توانست یک Proxy ساده باشد، اما یک مسئله مهم وجود داشت:
+
+**چطور مطمئن شویم درخواست‌هایی که به سرور خارجی می‌رسند واقعاً از سرور خودمان آمده‌اند؟**
+
+اینجا بود که ایده‌ی Signed Webhook Receiver شکل گرفت.
+
+به جای اینکه سرور مقصد صرفاً یک Endpoint عمومی داشته باشد، هر درخواست توسط سرور مبدا با کلید خصوصی امضا می‌شود.
+
+سرور مقصد نیز فقط کلید عمومی را در اختیار دارد و قبل از پردازش درخواست، امضای آن را بررسی می‌کند.
+
+---
+
+## معماری
+
+</div>
+
+```text
+┌─────────────────────┐
+│   Source Server     │
+│                     │
+│   Private Key       │
+└──────────┬──────────┘
+           │
+           │ Signed Request
+           ▼
+┌─────────────────────┐
+│ Signed Webhook      │
+│ Receiver            │
+│                     │
+│   Public Key        │
+└──────────┬──────────┘
+           │
+           │ Verify Signature
+           ▼
+     ┌───────────┐
+     │  Process  │
+     │  Request  │
+     └───────────┘
+```
+
+<div dir="rtl">
+
+در این معماری، کلید خصوصی فقط روی سرور فرستنده قرار دارد.
+
+سرور گیرنده هیچ‌وقت به کلید خصوصی نیاز ندارد و تنها کلید عمومی را نگه می‌دارد.
+
+این جداسازی یکی از نکات مهم طراحی امنیتی پروژه است.
+
+---
+
+## جریان درخواست
+
+</div>
+
+```text
+Client
+  |
+  | Signed Payload
+  v
+Webhook Receiver
+  |
+  | RSA Signature Verification
+  |
+  +-- Valid Signature ----> Process Data
+  |
+  +-- Invalid Signature --> Reject Request
+```
+
+<div dir="rtl">
+
+اگر امضا معتبر باشد، درخواست برای پردازش در اختیار برنامه قرار می‌گیرد.
+
+اگر امضا معتبر نباشد، درخواست رد می‌شود.
+
+---
+
+## چرا RSA؟
+
+در این پروژه از **امضای دیجیتال RSA با SHA-256** استفاده شده است.
+
+فرآیند به این شکل است:
+
+1. سرور فرستنده داده را به یک قالب مشخص و قابل تکرار تبدیل می‌کند.
+2. داده با کلید خصوصی RSA امضا می‌شود.
+3. امضا به Base64 تبدیل می‌شود.
+4. داده و امضا برای سرور گیرنده ارسال می‌شوند.
+5. گیرنده با کلید عمومی RSA امضا را بررسی می‌کند.
+6. فقط در صورت معتبر بودن امضا، داده پردازش می‌شود.
+
+مزیت اصلی این مدل این است که **کلید خصوصی لازم نیست هیچ‌وقت در اختیار سرور گیرنده قرار بگیرد.**
+
+---
+
+## یک سناریوی واقعی
+
+یکی از کاربردهای این پروژه، انتقال درخواست از سروری با دسترسی محدود به یک سرور واسط خارجی است.
+
+برای مثال:
+
+</div>
+
+```text
+┌──────────────────────┐
+│   Server داخل ایران  │
+│                      │
+│    Application       │
+└──────────┬───────────┘
+           │
+           │ Sign Request
+           ▼
+        Internet
+           │
+           ▼
+┌──────────────────────┐
+│   External Server    │
+│                      │
+│ Signed Webhook       │
+│ Receiver             │
+└──────────┬───────────┘
+           │
+           ▼
+     Telegram API
+```
+
+<div dir="rtl">
+
+در این معماری، سرور اصلی مستقیماً با سرویس خارجی ارتباط برقرار نمی‌کند.
+
+در عوض، درخواست را با کلید خصوصی امضا کرده و برای Receiver ارسال می‌کند.
+
+Receiver با کلید عمومی صحت درخواست را بررسی می‌کند و در صورت معتبر بودن، عملیات موردنظر را انجام می‌دهد.
+
+البته این معماری محدود به Telegram نیست و می‌تواند برای هر سرویس خارجی یا ارتباط Server-to-Server دیگری استفاده شود.
+
+---
+
+## ویژگی‌ها
+
+- اعتبارسنجی امضای RSA با SHA-256
+- Endpoint امن برای دریافت Webhook
+- ساخته‌شده با FastAPI و Uvicorn
+- آماده اجرا با Docker
+- سازگار با Traefik
+- اعتبارسنجی مبتنی بر کلید عمومی
+- معماری سبک و مناسب برای Microserviceها
+
+---
+
+## API
+
+### Endpoint
+
+</div>
+
+```http
+POST /api/v1/webhook
+```
+
+<div dir="rtl">
+
+### بدنه درخواست
+
+</div>
+
+```json
+{
+  "sign": "BASE64_SIGNATURE",
+  "data": {
+    "event": "payment.completed",
+    "id": 123
+  }
+}
+```
+
+<div dir="rtl">
+
+### پاسخ در صورت موفق بودن اعتبارسنجی
+
+</div>
+
+```json
+{
+  "status": "ok"
+}
+```
+
+<div dir="rtl">
+
+### امضای نامعتبر
+
+</div>
+
+```http
+HTTP/1.1 404 Not Found
+```
+
+<div dir="rtl">
+
+---
+
+## ساخت کلیدهای RSA
+
+ابتدا کلید خصوصی را ایجاد کنید:
+
+</div>
+
+```bash
+openssl genrsa -out private.pem 2048
+```
+
+<div dir="rtl">
+
+سپس کلید عمومی را از روی آن بسازید:
+
+</div>
+
+```bash
+openssl rsa \
+  -in private.pem \
+  -pubout \
+  -out public.pem
+```
+
+<div dir="rtl">
+
+**نکته مهم:** این سرویس فقط به `public key` نیاز دارد.
+
+کلید خصوصی باید فقط روی سرور فرستنده باقی بماند و نباید روی Receiver قرار گیرد.
+
+---
+
+## نکات امنیتی
+
+### از کلید خصوصی محافظت کنید
+
+کلید خصوصی نباید روی سرور دریافت‌کننده ذخیره شود.
+
+تنها کلید عمومی باید در اختیار Receiver باشد.
+
+### داده را قبل از امضا Canonical کنید
+
+فرستنده و گیرنده باید دقیقاً روی یک نمایش یکسان از داده کار کنند.
+
+برای JSON بهتر است Serialization به صورت deterministic انجام شود؛ برای مثال با مرتب‌سازی کلیدها و مشخص کردن جداکننده‌ها.
+
+### مراقب Replay Attack باشید
+
+امضای دیجیتال به تنهایی جلوی ارسال دوباره یک درخواست معتبر را نمی‌گیرد.
+
+برای جلوگیری از Replay Attack بهتر است اطلاعاتی مانند:
+
+- Timestamp
+- Nonce
+- Request ID
+
+را داخل داده‌ای که امضا می‌شود قرار دهید.
+
+سپس Receiver می‌تواند درخواست‌های قدیمی یا درخواست‌هایی که قبلاً پردازش شده‌اند را رد کند.
+
+### در محیط Production از HTTPS استفاده کنید
+
+امضای RSA صحت و تمامیت داده را تضمین می‌کند، اما جایگزین HTTPS نیست.
+
+در محیط Production همچنان باید ارتباط بین کلاینت و سرور با HTTPS برقرار باشد.
+
+---
+
+## Docker
+
+### ساخت Image
+
+</div>
+
+```bash
+docker build -t signed-webhook-receiver .
+```
+
+<div dir="rtl">
+
+### اجرای Container
+
+</div>
+
+```bash
+docker run -p 8000:8000 signed-webhook-receiver
+```
+
+<div dir="rtl">
+
+---
+
+## تنظیمات
+
+قبل از اجرای سرویس، دامنه خود را در فایل `.env` تنظیم کنید.
+
+یک فایل `.env` بسازید:
+
+</div>
+
+```env
+WEBHOOK_DOMAIN=hook.example.com
+```
+
+<div dir="rtl">
+
+`hook.example.com` را با دامنه خودتان جایگزین کنید.
+
+---
+
+## شبکه Traefik
+
+این پروژه انتظار دارد یک شبکه Docker با نام `proxy` از قبل وجود داشته باشد.
+
+در صورت نیاز، شبکه را ایجاد کنید:
+
+</div>
+
+```bash
+docker network create proxy
+```
+
+<div dir="rtl">
+
+سرویس Traefik و Signed Webhook Receiver باید به یک شبکه Docker مشترک متصل باشند.
+
+---
+
+## نمونه Webhook Sender
+
+فرستنده باید Payload را با کلید خصوصی RSA امضا کند.
+
+Receiver تنها به کلید عمومی متناظر نیاز دارد تا بتواند امضا را بررسی کند.
+
+</div>
+
+```python
+import json
+import base64
+
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+
+
+data = {
+    "event": "payment.completed",
+    "id": 123
+}
+
+
+message = json.dumps(
+    data,
+    separators=(",", ":"),
+    sort_keys=True
+).encode()
+
+
+signature = private_key.sign(
+    message,
+    padding.PKCS1v15(),
+    hashes.SHA256()
+)
+
+
+sign = base64.b64encode(signature).decode()
+
+
+payload = {
+    "sign": sign,
+    "data": data
+}
+```
+
+<div dir="rtl">
+
+Payload تولیدشده را به Endpoint زیر ارسال کنید:
+
+</div>
+
+```http
+POST https://your-domain.com/api/v1/webhook
+```
+
+<div dir="rtl">
+
+Receiver ابتدا امضای RSA را بررسی می‌کند و فقط در صورت معتبر بودن، داده را پردازش خواهد کرد.
+
+---
+
+## این پروژه چه چیزی هست و چه چیزی نیست؟
+
+### این پروژه است:
+
+- یک Webhook Receiver امن
+- یک سرویس برای اعتبارسنجی امضای RSA
+- یک لایه اعتماد در سطح Application
+- یک Gateway سبک برای ارتباط Server-to-Server
+- یک قطعه سازنده مناسب برای معماری‌های Distributed
+
+### این پروژه نیست:
+
+- VPN
+- Network Tunnel
+- Proxy عمومی
+- جایگزین TLS
+- Message Queue کامل
+
+---
+
+## مستندات و مقاله مرتبط
+
+برای آشنایی با داستان شکل‌گیری پروژه و تجربه واقعی پشت آن، مقاله زیر را مطالعه کنید:
 
 [وقتی سرور ایران نمی‌تواند به Telegram API وصل شود؛ تجربه ساخت Signed Webhook Receiver](https://virgool.io/@cyberhuginn/وقتی-سرور-ایران-نمی-تواند-به-telegram-api-وصل-شود-تجربه-ساخت-signed-webhook-receiver-bkzctpcochtj)
 
+مستندات فنی:
+
+[مشاهده مستندات](https://cyberhuginn.github.io/signed-webhook-receiver/)
+
 ---
 
-## Repository
+## مجوز
 
-[GitHub — cyberhuginn/signed-webhook-receiver](https://github.com/cyberhuginn/signed-webhook-receiver)
+این پروژه تحت مجوز **MIT** منتشر شده است.
+
+</div>
